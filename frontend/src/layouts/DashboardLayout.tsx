@@ -1,5 +1,6 @@
-import React from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import React, { useState } from "react";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   Activity,
   LayoutDashboard,
@@ -9,10 +10,48 @@ import {
   TrendingUp,
   ReceiptText,
   ShieldCheck,
-  Building2,
+  User as UserIcon,
+  LogOut,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 
 export const DashboardLayout: React.FC = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
+
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    setLogoutError(null);
+    try {
+      await logout();
+      navigate("/login", { replace: true });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Logout failed. Please retry.";
+      setLogoutError(message);
+    } finally {
+      setLoggingOut(false);
+    }
+  };
+
+  const getRoleBadgeClass = (role?: string) => {
+    switch (role) {
+      case "ADMIN":
+        return "role-badge admin";
+      case "INVENTORY_MANAGER":
+        return "role-badge inventory";
+      case "SALES_REP":
+        return "role-badge sales";
+      case "ACCOUNTANT":
+        return "role-badge accountant";
+      default:
+        return "role-badge";
+    }
+  };
+
   return (
     <div className="app-container">
       {/* Sidebar Navigation */}
@@ -45,10 +84,10 @@ export const DashboardLayout: React.FC = () => {
             <span className="badge-tag">M8</span>
           </div>
 
-          <div className="nav-item placeholder" title="Will be unlocked in Milestone 2">
+          <div className="nav-item placeholder" title="Unlocked in Milestone 2 (Backend Active)">
             <ShieldCheck size={18} />
             <span>Auth & Roles</span>
-            <span className="badge-tag">M2</span>
+            <span className="badge-tag" style={{ color: "var(--status-success)" }}>M2 Active</span>
           </div>
 
           <div className="nav-item placeholder" title="Will be unlocked in Milestone 3">
@@ -82,15 +121,51 @@ export const DashboardLayout: React.FC = () => {
           </div>
         </nav>
 
+        {/* User Identity and Session Footer */}
         <div className="sidebar-footer">
-          <div className="user-snippet">
-            <div className="user-avatar">
-              <Building2 size={16} />
+          {logoutError && (
+            <div
+              style={{
+                fontSize: "0.72rem",
+                color: "var(--status-error)",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                marginBottom: "8px",
+              }}
+              role="alert"
+            >
+              <AlertCircle size={12} />
+              <span>{logoutError}</span>
             </div>
-            <div>
-              <div style={{ fontSize: "0.82rem", fontWeight: 600 }}>MiniERP Demo Corp</div>
-              <div style={{ fontSize: "0.72rem", color: "var(--text-dim)" }}>Dev Environment</div>
+          )}
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div className="user-snippet">
+              <div className="user-avatar" title={user?.email}>
+                <UserIcon size={16} />
+              </div>
+              <div style={{ overflow: "hidden" }}>
+                <div style={{ fontSize: "0.82rem", fontWeight: 600, whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                  {user?.name || "Active Session"}
+                </div>
+                <div style={{ marginTop: "2px" }}>
+                  <span className={getRoleBadgeClass(user?.role)}>
+                    {user?.role || "GUEST"}
+                  </span>
+                </div>
+              </div>
             </div>
+
+            <button
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="btn-logout"
+              title="Sign out of MiniERP"
+              aria-label="Sign out"
+            >
+              {loggingOut ? <Loader2 size={14} className="auth-spinner" /> : <LogOut size={14} />}
+            </button>
           </div>
         </div>
       </aside>
@@ -99,16 +174,22 @@ export const DashboardLayout: React.FC = () => {
       <div className="main-wrapper">
         <header className="topbar">
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ fontSize: "0.85rem", color: "var(--text-dim)" }}>Milestone 1:</span>
+            <span style={{ fontSize: "0.85rem", color: "var(--text-dim)" }}>Milestone 2:</span>
             <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-main)" }}>
-              Foundation & Tooling Setup
+              Authentication & Role-Based Access Control
             </span>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Logged in as:</span>
+              <span style={{ fontSize: "0.82rem", fontWeight: 600 }}>{user?.email}</span>
+              <span className={getRoleBadgeClass(user?.role)}>{user?.role}</span>
+            </div>
+
             <div className="status-pill online">
               <span className="pulse-dot"></span>
-              Environment Active
+              Secure Session
             </div>
           </div>
         </header>

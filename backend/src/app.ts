@@ -2,6 +2,8 @@ import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import healthRouter from "./routes/health.routes";
+import authRouter from "./routes/auth.routes";
+import cookieParser from "cookie-parser";
 
 dotenv.config();
 
@@ -15,9 +17,11 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(cookieParser());
 
 // Routes
 app.use("/api/health", healthRouter);
+app.use("/api/auth", authRouter);
 
 // 404 Handler
 app.use((req: Request, res: Response) => {

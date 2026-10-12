@@ -15,3 +15,25 @@ model SystemConfig {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// Enterprise Roles for Role-Based Access Control (RBAC)
+enum Role {
+  ADMIN
+  INVENTORY_MANAGER
+  SALES_REP
+  ACCOUNTANT
+}
+
+// User model for authentication and identity management
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(SALES_REP)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([email])
+}

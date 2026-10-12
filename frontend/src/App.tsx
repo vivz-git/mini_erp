@@ -5,6 +5,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LoginPage } from "./pages/LoginPage";
 import { DashboardLayout } from "./layouts/DashboardLayout";
 import { HealthStatusPage } from "./pages/HealthStatusPage";
+import { CategoriesPage } from "./pages/CategoriesPage";
 
 export const App: React.FC = () => {
   return (
@@ -18,6 +19,7 @@ export const App: React.FC = () => {
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<DashboardLayout />}>
               <Route index element={<HealthStatusPage />} />
+              <Route path="categories" element={<CategoriesPage />} />
             </Route>
           </Route>
 

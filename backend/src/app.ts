@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import healthRouter from "./routes/health.routes";
 import authRouter from "./routes/auth.routes";
+import categoryRouter from "./routes/category.routes";
 import cookieParser from "cookie-parser";
 
 dotenv.config();
@@ -22,6 +23,7 @@ app.use(cookieParser());
 // Routes
 app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/categories", categoryRouter);
 
 // 404 Handler
 app.use((req: Request, res: Response) => {

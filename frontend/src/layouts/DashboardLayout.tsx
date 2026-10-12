@@ -14,6 +14,7 @@ import {
   LogOut,
   Loader2,
   AlertCircle,
+  Layers,
 } from "lucide-react";
 
 export const DashboardLayout: React.FC = () => {
@@ -74,6 +75,17 @@ export const DashboardLayout: React.FC = () => {
           >
             <Activity size={18} />
             <span>System Health</span>
+          </NavLink>
+
+          <div className="nav-section-title">Master Data</div>
+          <NavLink
+            to="/categories"
+            className={({ isActive }) =>
+              `nav-item ${isActive ? "active" : ""}`
+            }
+          >
+            <Layers size={18} />
+            <span>Categories</span>
           </NavLink>
 
           <div className="nav-section-title">ERP Roadmap Modules</div>

@@ -1,4 +1,12 @@
-import type { HealthResponse, User, LoginCredentials, AuthResponse } from "../types/api";
+import type {
+  HealthResponse,
+  User,
+  LoginCredentials,
+  AuthResponse,
+  Category,
+  CategoryInput,
+  CategoriesResponse,
+} from "../types/api";
 
 const COMMON_HEADERS: HeadersInit = {
   "Content-Type": "application/json",
@@ -71,8 +79,6 @@ export async function logout(): Promise<void> {
 
 /**
  * Verifies if an authenticated session exists via the HttpOnly cookie.
- * Returns the active User if authenticated, null if unauthenticated (401),
- * or throws an Error if the server/network encounters an unexpected failure.
  */
 export async function getCurrentUser(): Promise<User | null> {
   let response: Response;
@@ -100,4 +106,101 @@ export async function getCurrentUser(): Promise<User | null> {
 
   const data: AuthResponse = await response.json();
   return data.user;
+}
+
+/* ======================================================== */
+/* Master Data: Categories API Services                     */
+/* ======================================================== */
+
+/**
+ * Fetches paginated categories list with optional search and status filtering
+ */
+export async function fetchCategories(params?: {
+  search?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
+}): Promise<CategoriesResponse> {
+  const query = new URLSearchParams();
+  if (params?.search) query.set("search", params.search);
+  if (params?.status) query.set("status", params.status);
+  if (params?.page) query.set("page", params.page.toString());
+  if (params?.limit) query.set("limit", params.limit.toString());
+
+  const queryString = query.toString() ? `?${query.toString()}` : "";
+  const response = await fetch(`/api/categories${queryString}`, {
+    method: "GET",
+    headers: {
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.error || `Failed to fetch categories (status ${response.status})`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Creates a new category (Restricted to ADMIN & INVENTORY_MANAGER)
+ */
+export async function createCategory(input: CategoryInput): Promise<Category> {
+  const response = await fetch("/api/categories", {
+    method: "POST",
+    headers: COMMON_HEADERS,
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const message = data?.error || (response.status === 403 ? "You do not have permission to create categories." : "Failed to create category.");
+    throw new Error(message);
+  }
+
+  return data.category;
+}
+
+/**
+ * Updates an existing category (Restricted to ADMIN & INVENTORY_MANAGER)
+ */
+export async function updateCategory(id: string, input: Partial<CategoryInput>): Promise<Category> {
+  const response = await fetch(`/api/categories/${id}`, {
+    method: "PUT",
+    headers: COMMON_HEADERS,
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const message = data?.error || (response.status === 403 ? "You do not have permission to update categories." : "Failed to update category.");
+    throw new Error(message);
+  }
+
+  return data.category;
+}
+
+/**
+ * Deletes or deactivates a category (Restricted to ADMIN & INVENTORY_MANAGER)
+ */
+export async function deleteCategory(id: string): Promise<void> {
+  const response = await fetch(`/api/categories/${id}`, {
+    method: "DELETE",
+    headers: {
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    const message = data?.error || (response.status === 403 ? "You do not have permission to delete categories." : "Failed to delete category.");
+    throw new Error(message);
+  }
 }

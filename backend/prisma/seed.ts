@@ -71,6 +71,53 @@ async function main() {
     console.log(`- Seeded user: ${record.email} (${record.role}) [Active: ${record.isActive}]`);
   }
 
+  console.log("Seeding development master data categories...");
+
+  const defaultCategories = [
+    {
+      code: "RAW-MAT",
+      name: "Raw Materials",
+      description: "Basic materials and unfinished goods used in manufacturing and production",
+      isActive: true,
+    },
+    {
+      code: "FINISHED",
+      name: "Finished Goods",
+      description: "Manufactured products completed and packaged, ready for customer fulfillment",
+      isActive: true,
+    },
+    {
+      code: "PACKAGING",
+      name: "Packaging Materials",
+      description: "Shipping cartons, protective foam, adhesive tape, and label stock",
+      isActive: true,
+    },
+    {
+      code: "OFFICE",
+      name: "Office Supplies",
+      description: "Administrative supplies, equipment consumables, and stationery items",
+      isActive: true,
+    },
+  ];
+
+  for (const cat of defaultCategories) {
+    const record = await prisma.category.upsert({
+      where: { code: cat.code },
+      update: {
+        name: cat.name,
+        description: cat.description,
+        isActive: cat.isActive,
+      },
+      create: {
+        code: cat.code,
+        name: cat.name,
+        description: cat.description,
+        isActive: cat.isActive,
+      },
+    });
+    console.log(`- Seeded category: [${record.code}] ${record.name}`);
+  }
+
   console.log("Development seeding completed successfully.");
 }
 

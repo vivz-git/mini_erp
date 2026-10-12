@@ -103,11 +103,7 @@ async function main() {
   for (const cat of defaultCategories) {
     const record = await prisma.category.upsert({
       where: { code: cat.code },
-      update: {
-        name: cat.name,
-        description: cat.description,
-        isActive: cat.isActive,
-      },
+      update: {}, // Idempotent: preserve existing customized names, descriptions, or deactivations
       create: {
         code: cat.code,
         name: cat.name,

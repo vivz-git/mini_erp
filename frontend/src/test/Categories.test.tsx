@@ -221,4 +221,56 @@ describe("Categories Master Data Page Flow", () => {
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(/already exists/i);
   });
+
+  it("5. Deactivates a category via the UI and marks its status Inactive", async () => {
+    const adminUser = {
+      id: "u-admin",
+      email: "admin@minierp.local",
+      name: "Admin Alice",
+      role: "ADMIN" as const,
+    };
+
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url, init) => {
+      const urlStr = String(url);
+      if (urlStr.includes("/api/auth/me")) {
+        return new Response(JSON.stringify({ user: adminUser }), { status: 200 });
+      }
+      if (urlStr.includes("/api/categories/cat-1") && init?.method === "DELETE") {
+        return new Response(
+          JSON.stringify({
+            message: "Category 'Raw Materials' deactivated successfully",
+            category: { ...seededCategories[0], isActive: false },
+          }),
+          { status: 200 }
+        );
+      }
+      if (urlStr.includes("/api/categories")) {
+        return new Response(
+          JSON.stringify({
+            categories: seededCategories,
+            total: 2,
+            page: 1,
+            limit: 50,
+            totalPages: 1,
+          }),
+          { status: 200 }
+        );
+      }
+      return new Response("Not found", { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText("RAW-MAT")).toBeInTheDocument();
+    const deactivateBtn = screen.getByRole("button", { name: /Deactivate Raw Materials/i });
+    fireEvent.click(deactivateBtn);
+
+    // Row remains in table with Inactive status pill
+    await waitFor(() => {
+      expect(screen.getByText("Inactive")).toBeInTheDocument();
+    });
+    expect(screen.getByText("RAW-MAT")).toBeInTheDocument();
+  });
 });

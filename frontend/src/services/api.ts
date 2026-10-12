@@ -187,7 +187,8 @@ export async function updateCategory(id: string, input: Partial<CategoryInput>):
 }
 
 /**
- * Deletes or deactivates a category (Restricted to ADMIN & INVENTORY_MANAGER)
+ * Deactivates a category (Restricted to ADMIN & INVENTORY_MANAGER).
+ * Performs soft-deactivation (isActive = false) to protect historical ERP integrity.
  */
 export async function deleteCategory(id: string): Promise<void> {
   const response = await fetch(`/api/categories/${id}`, {
@@ -200,7 +201,9 @@ export async function deleteCategory(id: string): Promise<void> {
 
   if (!response.ok) {
     const data = await response.json().catch(() => null);
-    const message = data?.error || (response.status === 403 ? "You do not have permission to delete categories." : "Failed to delete category.");
+    const message = data?.error || (response.status === 403 ? "You do not have permission to deactivate categories." : "Failed to deactivate category.");
     throw new Error(message);
   }
 }
+
+export const deactivateCategory = deleteCategory;

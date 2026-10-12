@@ -180,7 +180,8 @@ export async function updateCategory(req: Request, res: Response): Promise<void>
 
 /**
  * DELETE /api/categories/:id
- * Deactivates or removes a category
+ * Deactivates a category (soft-deactivation: sets isActive = false).
+ * Enforces zero permanent data loss to preserve historical audit trails and future product relations.
  */
 export async function deleteCategory(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
@@ -194,9 +195,13 @@ export async function deleteCategory(req: Request, res: Response): Promise<void>
     return;
   }
 
-  await prisma.category.delete({
+  const deactivated = await prisma.category.update({
     where: { id },
+    data: { isActive: false },
   });
 
-  res.status(200).json({ message: `Category '${existing.name}' (${existing.code}) deleted successfully` });
+  res.status(200).json({
+    message: `Category '${deactivated.name}' (${deactivated.code}) deactivated successfully`,
+    category: deactivated,
+  });
 }

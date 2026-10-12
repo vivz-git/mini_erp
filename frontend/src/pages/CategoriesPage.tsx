@@ -135,15 +135,23 @@ export const CategoriesPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this category?")) return;
+  const handleDeactivate = async (cat: Category) => {
+    if (!cat.isActive) return;
+    if (!window.confirm(`Are you sure you want to deactivate category '${cat.name}' (${cat.code})?\n\nDeactivation preserves all historical records but marks the category unavailable for new product assignments.`)) {
+      return;
+    }
 
-    setDeletingId(id);
+    setDeletingId(cat.id);
     try {
-      await deleteCategory(id);
-      setCategories((prev) => prev.filter((c) => c.id !== id));
+      await deleteCategory(cat.id);
+      // Soft-deactivate in local state without deleting the row
+      setCategories((prev) =>
+        prev
+          .map((c) => (c.id === cat.id ? { ...c, isActive: false } : c))
+          .filter((c) => (statusFilter === "active" ? c.isActive : true))
+      );
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to delete category");
+      alert(err instanceof Error ? err.message : "Failed to deactivate category");
     } finally {
       setDeletingId(null);
     }
@@ -286,10 +294,10 @@ export const CategoriesPage: React.FC = () => {
                           </button>
                           <button
                             className="table-action-btn delete"
-                            title="Delete Category"
-                            disabled={deletingId === cat.id}
-                            onClick={() => handleDelete(cat.id)}
-                            aria-label={`Delete ${cat.name}`}
+                            title={cat.isActive ? "Deactivate Category" : "Already Inactive"}
+                            disabled={deletingId === cat.id || !cat.isActive}
+                            onClick={() => handleDeactivate(cat)}
+                            aria-label={`Deactivate ${cat.name}`}
                           >
                             {deletingId === cat.id ? (
                               <Loader2 size={14} className="auth-spinner" />

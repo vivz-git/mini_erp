@@ -170,9 +170,10 @@ async function runCategoryTests() {
     assert.strictEqual(data.category.name, "Updated Packaging Consumables");
   });
 
-  // 8. Admin can delete category
-  await test("8. Admin can delete category", async () => {
-    const res = await fetch(`${BASE_URL}/api/categories/${createdCategoryId}`, {
+  // 8. Soft-deactivation audit verification
+  await test("8. Deleting category deactivates it (isActive=false) rather than hard-deleting", async () => {
+    // Perform deactivation request
+    const deleteRes = await fetch(`${BASE_URL}/api/categories/${createdCategoryId}`, {
       method: "DELETE",
       headers: {
         "Cookie": adminCookie,
@@ -180,13 +181,46 @@ async function runCategoryTests() {
         "X-Requested-With": "XMLHttpRequest",
       },
     });
-    assert.strictEqual(res.status, 200);
+    assert.strictEqual(deleteRes.status, 200);
+    const deleteData = await deleteRes.json();
+    assert.strictEqual(deleteData.category.isActive, false, "Category isActive must be false after deletion request");
 
-    // Confirm it no longer exists
-    const checkRes = await fetch(`${BASE_URL}/api/categories/${createdCategoryId}`, {
+    // A. Verify the category STILL exists in the database by ID (HTTP 200, not 404!)
+    const getByIdRes = await fetch(`${BASE_URL}/api/categories/${createdCategoryId}`, {
       headers: { Cookie: adminCookie },
     });
-    assert.strictEqual(checkRes.status, 404);
+    assert.strictEqual(getByIdRes.status, 200, "Record must still exist in PostgreSQL");
+    const getByIdData = await getByIdRes.json();
+    assert.strictEqual(getByIdData.category.id, createdCategoryId);
+    assert.strictEqual(getByIdData.category.isActive, false);
+
+    // B. Verify it is ABSENT from the active-only list (?status=active)
+    const activeListRes = await fetch(`${BASE_URL}/api/categories?status=active`, {
+      headers: { Cookie: adminCookie },
+    });
+    assert.strictEqual(activeListRes.status, 200);
+    const activeListData = await activeListRes.json();
+    const foundInActive = activeListData.categories.some((c: { id: string }) => c.id === createdCategoryId);
+    assert.strictEqual(foundInActive, false, "Deactivated category must NOT appear in active-only list");
+
+    // C. Verify it is PRESENT in the inactive list (?status=inactive)
+    const inactiveListRes = await fetch(`${BASE_URL}/api/categories?status=inactive`, {
+      headers: { Cookie: adminCookie },
+    });
+    assert.strictEqual(inactiveListRes.status, 200);
+    const inactiveListData = await inactiveListRes.json();
+    const foundInInactive = inactiveListData.categories.some((c: { id: string }) => c.id === createdCategoryId);
+    assert.strictEqual(foundInInactive, true, "Deactivated category MUST appear in inactive list");
+
+    // D. Verify it is PRESENT when requesting all categories (?status=all)
+    const allListRes = await fetch(`${BASE_URL}/api/categories?status=all`, {
+      headers: { Cookie: adminCookie },
+    });
+    assert.strictEqual(allListRes.status, 200);
+    const allListData = await allListRes.json();
+    const foundInAll = allListData.categories.find((c: { id: string }) => c.id === createdCategoryId);
+    assert.ok(foundInAll, "Deactivated category MUST appear in all categories list");
+    assert.strictEqual(foundInAll.isActive, false);
   });
 
   // 9. Existing Health Endpoint Check
